@@ -8,10 +8,12 @@ import config         as c
 
 # Python imports
 import logging as log
+from pathlib import Path
 
 # Third party imports
 import pandas as pd
 import streamlit as sl
+
 class App:
     """
         Main application object, mainly used to get the data to show in the front end
@@ -29,6 +31,15 @@ class App:
             self._manager = ms.Manager.from_default()
         else:
             raise NotImplementedError(f"DB Backend '{config.db_backend}' not yet implemented")
+
+        self._config = config
+
+    @property
+    def config(self) -> c.Config:
+        """
+            Configuration used by this manager object
+        """
+        return self._config
 
     @sl.cache
     def get_dashboard_data(self, max_rows : int = 100, max_content_len : int = 200, label : str = "ANY", scraped : str = "Any") -> pd.DataFrame:
@@ -75,10 +86,62 @@ class App:
             # break if gathered enough rows
             if len(elems) == max_rows:
                 break
-
-            
-
         return pd.DataFrame(elems)
 
-        
+    @property
+    def available_branchs(self) -> List[str]:
+        """
+            List of available branches
+        """
+        # TODO add a function to classifier object to get available experiments and branches for an experiment
+        experiments_path = Path(self._manager.local_files_path, "experiments")
+        return [str(x.name) for x in experiments_path.glob("*")]
 
+    def available_experiments_for_branch(self, branch_name : str) -> List[str]:
+        """
+            List of available experiments for a given branch. Raise an error if invalid branch name is provided.
+
+            # Parameters
+                - branch_name : `str` = branch whose experiments are to be retrieved
+            # Return
+                List of experiments corresponding to the given branch
+        """
+        assert branch_name in self.available_branchs
+
+        # TODO add function to the classifier object to get experiments from branch
+        experiments_path = Path(self._manager.local_files_path, "experiments", branch_name)
+
+        return [str(x.name) for x in experiments_path.glob("*")]
+
+    def experiment_summary(self, branch_name : str, experiment_name : str) -> str:
+        """
+            Summary for the given experiment defined by its branch name and experiment name. Might be None if 
+            no summary is found
+            # Parameters
+                - branch_name : `str ` = Branch name for experiment
+                - experiment_name : `str ` = Experiment name for experiment
+            # Return
+                Summary for the given experiment, or None if not found
+        """
+        # Sanity check
+        assert branch_name in self.available_branchs
+        assert experiment_name in self.available_experiments_for_branch(branch_name)
+
+        # TODO Crear funcion en c4v manager que traiga el summary
+        summary_path = Path(self._manager.local_files_path, "experiments", branch_name, experiment_name, "summary.txt")
+
+        # Return None if not exists
+        if not summary_path.exists():
+            return None
+
+        return summary_path.read_text()
+
+    def classify(self, branch_name : str, experiment_name : str, limit : int = -1):
+        """
+            Run a classification process.
+            # Parameters
+                - branch_name : `str ` = Branch name for experiment
+                - experiment_name : `str ` = Experiment name for experiment
+                - limit  : `int` = Max ammount of rows to classify, provide a negative number for no limit
+        """
+        self._manager.run_pending_classification_from_experiment(branch_name, experiment_name, limit=limit)
