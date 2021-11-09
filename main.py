@@ -202,7 +202,7 @@ sl.sidebar.button(
     on_click=run_crawl_callback,
 )
 
-# -- < Crawling controllers > ---------------------------------
+# -- < Scraping controllers > ---------------------------------
 sl.sidebar.write("------")
 sl.sidebar.write("## Scraping")
 sl.sidebar.write("Scrape instances pending for scraping")
