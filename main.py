@@ -109,8 +109,11 @@ def generate_progress_infinite():
 def generate_progress_finite():
     sl.write("Progress")
     progress_bar = sl.progress( 0 )
+    progress_msg = sl.empty()
+    progress_msg.markdown(f"Crawled {crawled_so_far.count}/{crawl_limit}...")
     def progress_finite(urls : List[str]):
         crawled_so_far.add(len(urls))
+        progress_msg.markdown(f"Crawled {crawled_so_far.count}/{crawl_limit}...")
         progress_bar.progress(int(100 * (crawled_so_far.count/crawl_limit)))
         
     return progress_finite
