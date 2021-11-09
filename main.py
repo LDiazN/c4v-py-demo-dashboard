@@ -2,9 +2,7 @@
     Entry point for the streamlit app
 """
 import dataclasses
-from datetime import time
 from typing import List
-from PIL.Image import LIBIMAGEQUANT
 import streamlit as sl
 import app
 
