@@ -139,7 +139,30 @@ def run_crawl_callback():
 # Button to run
 sl.sidebar.button("Crawl", help="Run a crawling limit with the provided limits", on_click=run_crawl_callback)
         
+# -- < Crawling controllers > ---------------------------------
+sl.sidebar.write("------")
+sl.sidebar.write("## Scraping")
+sl.sidebar.write("Scrape instances pending for scraping")
+
+# Limit
+use_scrape_limit = sl.sidebar.checkbox("Limit", help="Use a max amount of urls to be scraped at the same time", value=True)
+if use_scrape_limit:
+    scrape_limit = sl.sidebar.number_input("Max instances to scrape", 0, value=100)
+else:
+    scrape_limit = -1
+
+# Called when crawl button is pressed
+def scrape_callback():
+    sl.info("Starting scraping process...")
+    if app.scrape(scrape_limit) == 0:
+        sl.success("Successfull scraping! 🤩")
+    else:
+        sl.error("Scraping process crashed 😵")
+
+# Scrape button
+sl.sidebar.button("Scrape", help="run a classification process, trying to scrape data for instances with incomplete data", on_click=scrape_callback)
 
 # -- < Show Dashboard > ---------------------------------------
 sl.dataframe(app.get_dashboard_data(label=label, max_rows=max_rows, scraped=scraped))
+
 

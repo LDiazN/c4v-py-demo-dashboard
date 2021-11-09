@@ -1,18 +1,18 @@
 """
-    State for the application, computing the data to show
+    State for the application and functions used to retrieve data needed to feed the 
+    page. This is basically a wrapper over c4v-py
 """
 # Local imports
-from typing import List
+from typing import Callable, List
 import c4v.microscope as ms
 import config         as c
 
 # Python imports
-import logging as log
 from pathlib import Path
+import os
 
 # Third party imports
 import pandas as pd
-import streamlit as sl
 
 class App:
     """
@@ -41,7 +41,13 @@ class App:
         """
         return self._config
 
-    @sl.cache
+    @property
+    def manager(self) -> ms.Manager:
+        """
+            Manager currently in use
+        """
+        return self._manager
+
     def get_dashboard_data(self, max_rows : int = 100, max_content_len : int = 200, label : str = "ANY", scraped : str = "Any") -> pd.DataFrame:
         """
             Get data to show in the dashboard
@@ -74,9 +80,12 @@ class App:
         elems = []
         for d in query:
             
+            # In case of null data:
             # Reformat enum fields
             if d.source: d.source = d.source.value
             if d.label:  d.label  = d.label.value
+            # Default to empty string
+            d.content = d.content or ""
 
             # truncate body if needed
             content_len = len(d.content)
@@ -145,3 +154,28 @@ class App:
                 - limit  : `int` = Max ammount of rows to classify, provide a negative number for no limit
         """
         self._manager.run_pending_classification_from_experiment(branch_name, experiment_name, limit=limit)
+
+    def crawl(self, crawlers_to_use : List[str], limit : int, progress_function : Callable[[List[str]], None]):
+        """
+            Run a crawling process
+            # Parameters
+                - crawlers_to_use : `[str]` = names of the crawlers to use during this crawling process
+                - limit : `int` = max amount of rows to store. If limit < 0, no limit is assumed
+                - progress_function : `[str] -> None` = Function to call whenever a new bulk of urls is received, intended to be used to add a progress bar
+        """
+        self._manager.crawl_and_process_new_urls_for(crawlers_to_use, post_process=progress_function, limit=limit, save_to_db=True)
+
+    def scrape(self, limit : int) -> int:
+        """
+            Run a scraping process, scraping only pending rows up to the given limit
+            # Parameters
+                - limit : `int` = max amount of rows to scrape. If `limit < 0`, 'no limit' is assumed
+            # Return
+                Exit code for the scraping sub process, 0 if success, anything else for error
+        """
+        # No pude programar esto de forma que llamara a la función scrape del manejador principal, porque la arquitectura de scrapy
+        # demanda estar en el el thread principal, cosa que no pasa con streamlit, así que esto fue lo mejor que pude hacer 
+        assert isinstance(limit, int)
+        return os.system(f"c4v scrape --limit {limit}")
+        
+            
