@@ -8,7 +8,6 @@
 import os
 import enum
 from typing import List
-import logging as log 
 
 class EnvOptions(enum.Enum):
     """
